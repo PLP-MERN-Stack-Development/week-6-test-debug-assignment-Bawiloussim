@@ -1,35 +1,46 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import Books from '../pages/Books';
 import { AuthProvider } from '../contexts/AuthContext';
+import { booksAPI } from '../services/api';
 
-// Mock the books API
+// --- Mock the books API ---
 vi.mock('../services/api', () => ({
     booksAPI: {
         getBooks: vi.fn(),
-        createBook: vi.fn()
-    }
-    }));
+        createBook: vi.fn(),
+    },
+}));
 
-    // Mock AuthContext
-    vi.mock('../contexts/AuthContext', () => ({
-    AuthProvider: ({ children }) => children,
-    useAuth: () => ({
+// --- Mock AuthContext (default: admin user) ---
+vi.mock('../contexts/AuthContext', () => {
+    return {
+        AuthProvider: ({ children }) => <>{children}</>,
+        useAuth: vi.fn(() => ({
         user: { role: 'admin' },
-        isAdmin: true
-    })
-    }));
+        isAdmin: true,
+        })),
+    };
+});
 
-    const BooksWithProviders = () => (
+const { useAuth } = require('../contexts/AuthContext');
+
+// --- Helper component to wrap Books with required providers ---
+const BooksWithProviders = () => (
     <BrowserRouter>
-        <Books />
+        <AuthProvider>
+            <Books />
+        </AuthProvider>
     </BrowserRouter>
-    );
+);
 
-    describe('Books Component', () => {
+describe('Books Component', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
     it('renders books list', async () => {
-        const { booksAPI } = await import('../services/api');
         booksAPI.getBooks.mockResolvedValue({
         data: {
             books: [
@@ -38,24 +49,33 @@ vi.mock('../services/api', () => ({
                 title: 'Test Book',
                 author: 'Test Author',
                 genre: 'Fiction',
-                availability: { availableCopies: 3, totalCopies: 5 }
-            }
+                availability: { availableCopies: 3, totalCopies: 5 },
+            },
             ],
-            totalPages: 1
-        }
-        });
+            totalPages: 1,
+        },
+    });
 
-        render(<BooksWithProviders />);
+    render(<BooksWithProviders />);
 
-        await waitFor(() => {
+    await waitFor(() => {
         expect(screen.getByText('Test Book')).toBeInTheDocument();
         expect(screen.getByText('by Test Author')).toBeInTheDocument();
-        });
     });
+});
 
     it('shows add book button for admin', () => {
-        render(<BooksWithProviders />);
-        
-        expect(screen.getByText('Add Book')).toBeInTheDocument();
+    render(<BooksWithProviders />);
+    expect(screen.getByText('Add Book')).toBeInTheDocument();
+});
+
+    it('does not show add book button for non-admin', () => {
+    useAuth.mockReturnValueOnce({
+        user: { role: 'user' },
+        isAdmin: false,
     });
+
+    render(<BooksWithProviders />);
+    expect(screen.queryByText('Add Book')).not.toBeInTheDocument();
+});
 });
