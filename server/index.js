@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const server = require('./server');
+const { app, server } = require('./server');
 
 dotenv.config();
 
