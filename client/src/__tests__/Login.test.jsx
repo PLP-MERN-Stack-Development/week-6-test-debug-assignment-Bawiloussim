@@ -23,7 +23,7 @@ describe('Login Component', () => {
     it('renders login form', () => {
         render(<LoginWithProviders />);
         
-        expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     });
@@ -51,7 +51,7 @@ describe('Login Component', () => {
 
         render(<LoginWithProviders />);
         
-        fireEvent.change(screen.getByLabelText(/email/i), {
+        fireEvent.change(screen.getByLabelText(/email address/i), {
         target: { value: 'test@example.com' }
         });
         fireEvent.change(screen.getByLabelText(/password/i), {
